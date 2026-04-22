@@ -1,7 +1,13 @@
 import { replicateLDES } from "ldes-client";
 import { Writer } from "n3";
 
-export async function VirtuosoHandler(VIRTUOSO_URL, data_url, type, graphName) {
+export async function VirtuosoHandler(VIRTUOSO_URL, data_url, type, graphName,deleteAndReplace = true) {
+  if (!deleteAndReplace) {
+    console.log(`${type} Virtuoso: skipping fetch and upload (delete=false).`);
+    return 0;
+  }
+
+
   console.log(`Starting ${type} Virtuoso Service stream...`);
   const allQuads = [];
 

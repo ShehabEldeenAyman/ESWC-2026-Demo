@@ -28,7 +28,6 @@ import {name_GRAPH_TTL,name_GRAPH_LDES,name_GRAPH_LDESTSS} from './constants/con
 //---------------------------------------------------------------
 const app = express();
 const PORT = 3000;
-
 var oxigraphLDES_ingest_time = null;
 var oxigraphLDESTSS_ingest_time = null;
 var oxigraphTTL_ingest_time = null;
@@ -36,7 +35,6 @@ var virtuosoLDES_ingest_time = null;
 var virtuosoLDESTSS_ingest_time = null;
 var virtuosoTTL_ingest_time = null;
 var postgresCSV_ingest_time = null;
-
 var oxigraphLDES_recall_time = null;
 var oxigraphLDESTSS_recall_time = null;
 var oxigraphTTL_recall_time = null;
@@ -327,7 +325,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 0: Oxigraph LDESTSS
         results.push(await runIngest("LDESTSS Oxigraph",
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDESTSS, data_url_LDESTSS, "LDESTSS", 7878, name_GRAPH_LDESTSS),
+            OxigraphHandler(OXIGRAPH_BASE_URL_LDESTSS, data_url_LDESTSS, "LDESTSS", 7878, name_GRAPH_LDESTSS, false),
             (t) => oxigraphLDESTSS_ingest_time = t
         ));
     } catch (err) { console.error("LDESTSS Oxigraph ingest failed:", err); results.push(0); }
@@ -335,7 +333,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 1: Oxigraph LDES
         results.push(await runIngest("LDES Oxigraph",
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDES, data_url_LDES, "LDES", 7879, name_GRAPH_LDES),
+            OxigraphHandler(OXIGRAPH_BASE_URL_LDES, data_url_LDES, "LDES", 7879, name_GRAPH_LDES,false),
             (t) => oxigraphLDES_ingest_time = t
         ));
     } catch (err) { console.error("LDES Oxigraph ingest failed:", err); results.push(0); }

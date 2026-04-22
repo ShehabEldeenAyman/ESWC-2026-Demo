@@ -1,7 +1,12 @@
 import { Parser, Writer, DataFactory } from "n3";
 const { namedNode } = DataFactory;
 
-export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, graphName) {
+export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, graphName, deleteAndReplace = true) {
+    if (!deleteAndReplace) {
+    console.log(`${type} OxigraphTTL: skipping fetch and upload (delete=false).`);
+    return 0;
+  }
+
   console.log(`Starting ${type} Service: Fetching TTL from URL...`);
   const allQuads = [];
 

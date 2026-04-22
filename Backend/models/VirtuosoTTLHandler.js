@@ -1,6 +1,11 @@
 import { Parser, Writer } from "n3";
 
-export async function VirtuosoTTLHandler(VIRTUOSO_URL, fileUrl, type, graphName) {
+export async function VirtuosoTTLHandler(VIRTUOSO_URL, fileUrl, type, graphName, deleteAndReplace = true) {
+  if (!deleteAndReplace) {
+    console.log(`${type} Virtuoso TTL: skipping fetch and upload (delete=false).`);
+    return 0;
+  }
+
   console.log(`Starting ${type} Virtuoso TTL Service: Fetching from ${fileUrl}...`);
   const allQuads = [];
 

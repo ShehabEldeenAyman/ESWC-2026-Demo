@@ -1,7 +1,12 @@
 import { replicateLDES } from "ldes-client";
 import { Writer } from "n3";
 
-export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, graphName) {
+export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, graphName, deleteAndReplace = true) {
+  if (!deleteAndReplace) {
+    console.log(`${type} Oxigraph: skipping fetch and upload (delete=false).`);
+    return 0;
+  }
+
   console.log(`Starting ${type} Service stream...`);
   const allQuads = [];
 
