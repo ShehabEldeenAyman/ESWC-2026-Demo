@@ -16,7 +16,11 @@ export const pool = new Pool({
     port: process.env.DB_PORT,
 });
 
-export const postgresHandler = async (url) => {
+export const postgresHandler = async (url,deleteAndReplace = true) => {
+        if (!deleteAndReplace) {
+        console.log("Postgres: skipping fetch and upload (delete=false).");
+        return 0;
+    }
     try {
         // 1. Ensure table exists
         const createTableQuery = `

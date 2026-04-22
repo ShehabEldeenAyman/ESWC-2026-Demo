@@ -49,7 +49,7 @@ var virtuosoTSS_count = null;
 var oxigraphTTL_count = null;
 var oxigraphLDES_count = null;
 var oxigraphTSS_count = null;
-
+var deleteExisting = false; // Set to true to clear existing data before ingesting new data
 app.use(express.json());
 // Replace the simple cors() with this:
 app.use(cors({
@@ -300,6 +300,7 @@ app.get('/ttl', (req, res) => {
 });
 
 async function startServer() {
+   
 try {
 
     console.log("Initializing LDESTSS data...");
@@ -325,7 +326,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 0: Oxigraph LDESTSS
         results.push(await runIngest("LDESTSS Oxigraph",
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDESTSS, data_url_LDESTSS, "LDESTSS", 7878, name_GRAPH_LDESTSS, false),
+            OxigraphHandler(OXIGRAPH_BASE_URL_LDESTSS, data_url_LDESTSS, "LDESTSS", 7878, name_GRAPH_LDESTSS, deleteExisting),
             (t) => oxigraphLDESTSS_ingest_time = t
         ));
     } catch (err) { console.error("LDESTSS Oxigraph ingest failed:", err); results.push(0); }
@@ -333,7 +334,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 1: Oxigraph LDES
         results.push(await runIngest("LDES Oxigraph",
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDES, data_url_LDES, "LDES", 7879, name_GRAPH_LDES,false),
+            OxigraphHandler(OXIGRAPH_BASE_URL_LDES, data_url_LDES, "LDES", 7879, name_GRAPH_LDES, deleteExisting),
             (t) => oxigraphLDES_ingest_time = t
         ));
     } catch (err) { console.error("LDES Oxigraph ingest failed:", err); results.push(0); }
@@ -341,7 +342,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 2: Virtuoso LDES
         results.push(await runIngest("LDES Virtuoso",
-            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDES, "LDES", name_GRAPH_LDES),
+            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDES, "LDES", name_GRAPH_LDES, deleteExisting),
             (t) => virtuosoLDES_ingest_time = t
         ));
     } catch (err) { console.error("LDES Virtuoso ingest failed:", err); results.push(0); }
@@ -349,7 +350,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 3: Virtuoso LDESTSS
         results.push(await runIngest("LDESTSS Virtuoso",
-            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDESTSS, "LDESTSS", name_GRAPH_LDESTSS),
+            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDESTSS, "LDESTSS", name_GRAPH_LDESTSS, deleteExisting),
             (t) => virtuosoLDESTSS_ingest_time = t
         ));
     } catch (err) { console.error("LDESTSS Virtuoso ingest failed:", err); results.push(0); }
@@ -357,7 +358,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 4: TTL Oxigraph
         results.push(await runIngest("TTL Oxigraph",
-            OxigraphTTLHandler(OXIGRAPH_BASE_URL_TTL, data_url_TTL, "TTL", 7877, name_GRAPH_TTL),
+            OxigraphTTLHandler(OXIGRAPH_BASE_URL_TTL, data_url_TTL, "TTL", 7877, name_GRAPH_TTL, deleteExisting),
             (t) => oxigraphTTL_ingest_time = t
         ));
     } catch (err) { console.error("TTL Oxigraph ingest failed:", err); results.push(0); }
@@ -365,7 +366,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 5: TTL Virtuoso
         results.push(await runIngest("TTL Virtuoso",
-            VirtuosoTTLHandler("http://localhost:8890/sparql-graph-crud", data_url_TTL, "TTL", name_GRAPH_TTL),
+            VirtuosoTTLHandler("http://localhost:8890/sparql-graph-crud", data_url_TTL, "TTL", name_GRAPH_TTL, deleteExisting),
             (t) => virtuosoTTL_ingest_time = t
         ));
     } catch (err) { console.error("TTL Virtuoso ingest failed:", err); results.push(0); }
