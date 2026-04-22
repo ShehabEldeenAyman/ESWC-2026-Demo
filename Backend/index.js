@@ -320,81 +320,76 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     return count;
 };
 
-// 2. Start ALL tasks simultaneously
-// We pass the Handler execution and a simple arrow function to set the correct global time variable
-const ingestionTaskPromises = [
-        // 0: Oxigraph LDESTSS
-        runIngest("LDESTSS Oxigraph", 
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDESTSS, data_url_LDESTSS, "LDESTSS", 7878,name_GRAPH_LDESTSS), 
-            (t) => oxigraphLDESTSS_ingest_time = t
-        ),
-        // 1: Oxigraph LDES
-        runIngest("LDES Oxigraph", 
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDES, data_url_LDES, "LDES", 7879,name_GRAPH_LDES),
-            (t) => oxigraphLDES_ingest_time = t
-        ),
-        // 2: Virtuoso LDES
-        runIngest("LDES Virtuoso", 
-            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDES, "LDES", name_GRAPH_LDES),
-            (t) => virtuosoLDES_ingest_time = t
-        ),
-        // 3: Virtuoso LDESTSS
-        runIngest("LDESTSS Virtuoso", 
-            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDESTSS, "LDESTSS", name_GRAPH_LDESTSS),
-            (t) => virtuosoLDESTSS_ingest_time = t
-        ),
-        // 4: TTL Oxigraph
-        runIngest("TTL Oxigraph", 
-            OxigraphTTLHandler(OXIGRAPH_BASE_URL_TTL, data_url_TTL, "TTL", 7877,name_GRAPH_TTL),
-            (t) => oxigraphTTL_ingest_time = t
-        ),
-        // 5: TTL Virtuoso
-        runIngest("TTL Virtuoso", 
-            VirtuosoTTLHandler("http://localhost:8890/sparql-graph-crud", data_url_TTL, "TTL", name_GRAPH_TTL),
-            (t) => virtuosoTTL_ingest_time = t
-        ),
-        // 6: Postgres CSV
-        runIngest("CSV Postgres",
-            postgresHandler(CSV_URL),
-            (t) => postgresCSV_ingest_time = t
-        )
-    ];
+// 2. Run ALL tasks sequentially, one after another
+    console.log("Waiting for ingestion to complete...");
+    const results = [];
 
     try {
-        console.log("Waiting for ingestion to complete...");
-        
-        // WAIT for the actual tasks to finish
-        //const results = await Promise.all(ingestionTaskPromises);
-        const outcomes = await Promise.allSettled(ingestionTaskPromises);
+        // 0: Oxigraph LDESTSS
+        results.push(await runIngest("LDESTSS Oxigraph",
+            OxigraphHandler(OXIGRAPH_BASE_URL_LDESTSS, data_url_LDESTSS, "LDESTSS", 7878, name_GRAPH_LDESTSS),
+            (t) => oxigraphLDESTSS_ingest_time = t
+        ));
+    } catch (err) { console.error("LDESTSS Oxigraph ingest failed:", err); results.push(0); }
 
-// Map the outcomes back to a results array to keep your existing logic compatible
-const results = outcomes.map(outcome => {
-  if (outcome.status === 'fulfilled') {
-    return outcome.value; // The objectCount returned by your handlers
-  } else {
-    console.error("Task failed:", outcome.reason);
-    return 0; // Or null/error object, depending on how results are used
-  }
-});
+    try {
+        // 1: Oxigraph LDES
+        results.push(await runIngest("LDES Oxigraph",
+            OxigraphHandler(OXIGRAPH_BASE_URL_LDES, data_url_LDES, "LDES", 7879, name_GRAPH_LDES),
+            (t) => oxigraphLDES_ingest_time = t
+        ));
+    } catch (err) { console.error("LDES Oxigraph ingest failed:", err); results.push(0); }
 
-        // for (const taskPromise of ingestionTaskPromises) {
-        //     await taskPromise; // We await each one to ensure they finish and set their respective time variables
-        // }
-        // Assign the returned counts to your global variables based on the array order above
-        oxigraphTSS_count = results[0];
-        oxigraphLDES_count = results[1];
-        virtuosoLDES_count = results[2];
-        virtuosoTSS_count = results[3];
-        oxigraphTTL_count = results[4];
-        virtuosoTTL_count = results[5];
-        // results[6] is Postgres count, if you need it later
+    try {
+        // 2: Virtuoso LDES
+        results.push(await runIngest("LDES Virtuoso",
+            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDES, "LDES", name_GRAPH_LDES),
+            (t) => virtuosoLDES_ingest_time = t
+        ));
+    } catch (err) { console.error("LDES Virtuoso ingest failed:", err); results.push(0); }
 
-        console.log("Ingestion fully complete. Starting Recall benchmarks...");
+    try {
+        // 3: Virtuoso LDESTSS
+        results.push(await runIngest("LDESTSS Virtuoso",
+            VirtuosoHandler("http://localhost:8890/sparql-graph-crud", data_url_LDESTSS, "LDESTSS", name_GRAPH_LDESTSS),
+            (t) => virtuosoLDESTSS_ingest_time = t
+        ));
+    } catch (err) { console.error("LDESTSS Virtuoso ingest failed:", err); results.push(0); }
 
-    } catch (err) {
-        console.error("Error during ingest process:", err);
-        // Optional: process.exit(1) if ingestion fails?
-    }
+    try {
+        // 4: TTL Oxigraph
+        results.push(await runIngest("TTL Oxigraph",
+            OxigraphTTLHandler(OXIGRAPH_BASE_URL_TTL, data_url_TTL, "TTL", 7877, name_GRAPH_TTL),
+            (t) => oxigraphTTL_ingest_time = t
+        ));
+    } catch (err) { console.error("TTL Oxigraph ingest failed:", err); results.push(0); }
+
+    try {
+        // 5: TTL Virtuoso
+        results.push(await runIngest("TTL Virtuoso",
+            VirtuosoTTLHandler("http://localhost:8890/sparql-graph-crud", data_url_TTL, "TTL", name_GRAPH_TTL),
+            (t) => virtuosoTTL_ingest_time = t
+        ));
+    } catch (err) { console.error("TTL Virtuoso ingest failed:", err); results.push(0); }
+
+    try {
+        // 6: Postgres CSV
+        results.push(await runIngest("CSV Postgres",
+            postgresHandler(CSV_URL),
+            (t) => postgresCSV_ingest_time = t
+        ));
+    } catch (err) { console.error("CSV Postgres ingest failed:", err); results.push(0); }
+
+    // Assign the returned counts to global variables based on the array order above
+    oxigraphTSS_count = results[0];
+    oxigraphLDES_count = results[1];
+    virtuosoLDES_count = results[2];
+    virtuosoTSS_count = results[3];
+    oxigraphTTL_count = results[4];
+    virtuosoTTL_count = results[5];
+    // results[6] is Postgres count, if you need it later
+
+    console.log("Ingestion fully complete. Starting Recall benchmarks...");
 
 console.log("Initialization finished. Starting web server...");
 
@@ -436,62 +431,60 @@ const runRecall = async (name, routeFn, query1, query2, url, timeSetter) => {
     console.log(`${name} recall finished! Total time: ${duration.toFixed(2)} seconds.`);
 };
 
-const recallPromises = [
+// --- Run ALL recall tasks sequentially, one after another ---
+try {
     // --- Virtuoso Benchmarks ---
-    runRecall("Virtuoso LDES", 
-        ldesVirtuosoRoute, 
-        RiverStage1YearLDESqueryALL(), 
-        RiverDischarge1YearLDESqueryALL(), 
+    await runRecall("Virtuoso LDES",
+        ldesVirtuosoRoute,
+        RiverStage1YearLDESqueryALL(),
+        RiverDischarge1YearLDESqueryALL(),
         VIRTUOSO_URL,
         (t) => virtuosoLDES_recall_time = t
-    ),
-    
-    runRecall("Virtuoso LDESTSS", 
-        ldestssVirtuosoRoute, 
-        RiverStage1YearTSSqueryALL(), 
-        RiverDischarge1YearTSSqueryALL(), 
+    );
+
+    await runRecall("Virtuoso LDESTSS",
+        ldestssVirtuosoRoute,
+        RiverStage1YearTSSqueryALL(),
+        RiverDischarge1YearTSSqueryALL(),
         VIRTUOSO_URL,
         (t) => virtuosoLDESTSS_recall_time = t
-    ),
+    );
 
-    runRecall("Virtuoso TTL", 
-        ttlVirtuosoRoute, 
-        RiverStage1YearTTLqueryVirtuosoALL(), 
-        RiverDischarge1YearTTLqueryVirtuosoALL(), 
+    await runRecall("Virtuoso TTL",
+        ttlVirtuosoRoute,
+        RiverStage1YearTTLqueryVirtuosoALL(),
+        RiverDischarge1YearTTLqueryVirtuosoALL(),
         VIRTUOSO_URL,
         (t) => virtuosoTTL_recall_time = t
-    ),
+    );
 
     // --- Oxigraph Benchmarks ---
-    runRecall("Oxigraph LDES", 
-        ldesOxigraphRoute, 
-        RiverStage1YearLDESqueryALL(), 
-        RiverDischarge1YearLDESqueryALL(), 
+    await runRecall("Oxigraph LDES",
+        ldesOxigraphRoute,
+        RiverStage1YearLDESqueryALL(),
+        RiverDischarge1YearLDESqueryALL(),
         OXIGRAPH_BASE_URL_LDES,
         (t) => oxigraphLDES_recall_time = t
-    ),
+    );
 
-    runRecall("Oxigraph LDESTSS", 
-        ldestssOxigraphRoute, 
-        RiverStage1YearTSSqueryALL(), 
-        RiverDischarge1YearTSSqueryALL(), 
+    await runRecall("Oxigraph LDESTSS",
+        ldestssOxigraphRoute,
+        RiverStage1YearTSSqueryALL(),
+        RiverDischarge1YearTSSqueryALL(),
         OXIGRAPH_BASE_URL_LDESTSS,
         (t) => oxigraphLDESTSS_recall_time = t
-    ),
+    );
 
-    runRecall("Oxigraph TTL", 
-        ttlOxigraphRoute, 
-        RiverStage1YearTTLqueryOxigraphALL(), 
-        RiverDischarge1YearTTLqueryOxigraphALL(), 
+    await runRecall("Oxigraph TTL",
+        ttlOxigraphRoute,
+        RiverStage1YearTTLqueryOxigraphALL(),
+        RiverDischarge1YearTTLqueryOxigraphALL(),
         OXIGRAPH_BASE_URL_TTL,
         (t) => oxigraphTTL_recall_time = t
-    ),
+    );
 
-    runRecallPostgres("Postgres CSV", (t) => postgresCSV_recall_time = t),
-];
+    await runRecallPostgres("Postgres CSV", (t) => postgresCSV_recall_time = t);
 
-try {
-    await Promise.all(recallPromises);
 } catch (err) {
     console.error("Error during recall benchmarks:", err);
     // You might want to decide if you want to crash here or continue starting the server
