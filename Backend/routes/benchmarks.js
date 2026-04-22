@@ -1,4 +1,9 @@
-export async function ingestBenchmarks(req, res, oxigraphLDESTSS_time, oxigraphLDES_time, virtuosoLDESTSS_time, virtuosoLDES_time,oxigraphTTL_time,virtuosoTTL_time,postgresCSV_time) {
+
+
+export async function ingestBenchmarks(req, res, oxigraphLDESTSS_time, oxigraphLDES_time, virtuosoLDESTSS_time, virtuosoLDES_time,oxigraphTTL_time,virtuosoTTL_time,postgresCSV_time, deleteAndReplace = true) {
+   
+   
+   
     try {
         // Validation: Ensure the benchmark times are actually provided
         // if (oxigraphLDES_time === undefined || virtuosoLDES_time === undefined || oxigraphLDESTSS_time === undefined || virtuosoLDESTSS_time === undefined || oxigraphTTL_time === undefined) {
@@ -27,7 +32,7 @@ export async function ingestBenchmarks(req, res, oxigraphLDESTSS_time, oxigraphL
 }
 
 
-export async function recallBenchmarks(req, res,oxigraphLDES_recall_time, virtuosoLDES_recall_time, oxigraphLDESTSS_recall_time, virtuosoLDESTSS_recall_time,oxigraphTTL_recall_time,virtuosoTTL_recall_time,postgresCSV_recall_time) {
+export async function recallBenchmarks(req, res,oxigraphLDES_recall_time, virtuosoLDES_recall_time, oxigraphLDESTSS_recall_time, virtuosoLDESTSS_recall_time,oxigraphTTL_recall_time,virtuosoTTL_recall_time,postgresCSV_recall_time, deleteAndReplace = true) {
     try {
         // Validation: Ensure the benchmark times are actually provided
         // if (oxigraphLDES_time === undefined || virtuosoLDES_time === undefined || oxigraphLDESTSS_time === undefined || virtuosoLDESTSS_time === undefined || oxigraphTTL_time === undefined) {
@@ -56,7 +61,7 @@ export async function recallBenchmarks(req, res,oxigraphLDES_recall_time, virtuo
     }
 }
 
-export async function objectcountBenchmarks(req, res,virtuosoTTL_count,virtuosoLDES_count,virtuosoTSS_count,oxigraphTTL_count,oxigraphLDES_count,oxigraphTSS_count) {
+export async function objectcountBenchmarks(req, res,virtuosoTTL_count,virtuosoLDES_count,virtuosoTSS_count,oxigraphTTL_count,oxigraphLDES_count,oxigraphTSS_count, deleteAndReplace = true) {
     try {
         // Validation: Ensure the benchmark times are actually provided
         // if (oxigraphLDES_time === undefined || virtuosoLDES_time === undefined || oxigraphLDESTSS_time === undefined || virtuosoLDESTSS_time === undefined || oxigraphTTL_time === undefined) {
