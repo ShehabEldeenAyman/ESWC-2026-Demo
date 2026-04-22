@@ -1,19 +1,18 @@
 import { replicateLDES } from "ldes-client";
 import { Writer } from "n3";
 
-export async function VirtuosoHandler(VIRTUOSO_URL, data_url, type, graphName,deleteAndReplace = true) {
+const BATCH_SIZE = 5000;
+
+export async function VirtuosoHandler(VIRTUOSO_URL, data_url, type, graphName, deleteAndReplace = true) {
   if (!deleteAndReplace) {
     console.log(`${type} Virtuoso: skipping fetch and upload (delete=false).`);
     return 0;
   }
 
-
   console.log(`Starting ${type} Virtuoso Service stream...`);
-  const allQuads = [];
+  console.log(`Targeting graph: ${graphName}`);
 
   try {
-    console.log(`Targeting graph: ${graphName}`);
-
     const ldesClient = replicateLDES({
       url: data_url,
       fetchOptions: { redirect: "follow" }
@@ -21,27 +20,41 @@ export async function VirtuosoHandler(VIRTUOSO_URL, data_url, type, graphName,de
 
     const memberReader = ldesClient.stream({ materialize: true }).getReader();
 
-    // 1. Accumulate all data
+    // 1. Stream into batches — upload and discard each batch to keep memory bounded
+    let batch = [];
+    let totalQuads = 0;
+    const uniqueSubjects = new Set();
+    let isFirstBatch = true;
+
     let result = await memberReader.read();
     while (!result.done) {
-      allQuads.push(...result.value.quads);
+      for (const quad of result.value.quads) {
+        batch.push(quad);
+        uniqueSubjects.add(quad.subject.value);
+      }
+
+      if (batch.length >= BATCH_SIZE) {
+        await uploadToVirtuoso(batch, VIRTUOSO_URL, graphName, type, isFirstBatch);
+        totalQuads += batch.length;
+        console.log(`${type}: uploaded ${totalQuads} quads so far...`);
+        batch.length = 0; // Free batch memory
+        isFirstBatch = false;
+      }
+
       result = await memberReader.read();
     }
 
-    // 2. Count unique objects (subjects)
-    if (allQuads.length > 0) {
-      const uniqueSubjects = new Set(allQuads.map(q => q.subject.value));
-      const objectCount = uniqueSubjects.size;
+    // Flush remaining quads
+    if (batch.length > 0) {
+      await uploadToVirtuoso(batch, VIRTUOSO_URL, graphName, type, isFirstBatch);
+      totalQuads += batch.length;
+      batch.length = 0;
+    }
 
-      console.log(`Found ${objectCount} unique objects (from ${allQuads.length} total quads)`);
-      
-      console.log(`Uploading to ${type} Virtuoso graph: ${graphName}`);
-      await uploadToVirtuoso(allQuads, VIRTUOSO_URL, graphName, type);
-      allQuads.length = 0; // Free memory — data is now in Oxigraph, no need to keep it in RAM
-      console.log(`${type} Virtuoso upload successful.`);
-      
-      // Return the count for benchmarking purposes
-      console.log(`object count: ${objectCount}`);
+    if (totalQuads > 0) {
+      const objectCount = uniqueSubjects.size;
+      console.log(`Found ${objectCount} unique objects (from ${totalQuads} total quads)`);
+      console.log(`${type} Virtuoso upload successful. object count: ${objectCount}`);
       return objectCount;
     } else {
       console.log("No data found to upload.");
@@ -53,10 +66,9 @@ export async function VirtuosoHandler(VIRTUOSO_URL, data_url, type, graphName,de
     throw error;
   }
 }
-async function uploadToVirtuoso(quads, url, graphName, type) {
+
+async function uploadToVirtuoso(quads, url, graphName, type, isFirstBatch) {
   try {
-    // 1. IMPORTANT: Map Quads to Triples by removing the graph component.
-    // Virtuoso GSP ?graph= endpoint only accepts N-Triples (3 components).
     const triplesOnly = quads.map(q => ({
       subject: q.subject,
       predicate: q.predicate,
@@ -74,19 +86,16 @@ async function uploadToVirtuoso(quads, url, graphName, type) {
     });
 
     const gspUrl = `${url}?graph=${encodeURIComponent(graphName)}`;
-    
-    //console.log(`Sending data to Virtuoso GSP: ${gspUrl}`);
-    // --- ADDED: CLEAR THE SPECIFIC GRAPH FIRST ---
-    // This ensures no old data remains in this specific graph
-    await fetch(gspUrl, { method: 'DELETE' });
-    console.log(`Cleared Virtuoso graph: ${graphName}`);
 
+    // Only clear the graph on the very first batch
+    if (isFirstBatch) {
+      await fetch(gspUrl, { method: 'DELETE' });
+      console.log(`Cleared Virtuoso graph: ${graphName}`);
+    }
 
     const response = await fetch(gspUrl, {
-      method: 'POST', 
-      headers: { 
-        'Content-Type': 'application/n-triples', 
-      },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/n-triples' },
       body: nTriples
     });
 

@@ -1,6 +1,8 @@
 import { Parser, Writer, DataFactory } from "n3";
 const { namedNode } = DataFactory;
 
+const BATCH_SIZE = 5000;
+
 export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, graphName, deleteAndReplace = true) {
     if (!deleteAndReplace) {
     console.log(`${type} OxigraphTTL: skipping fetch and upload (delete=false).`);
@@ -8,10 +10,9 @@ export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, gr
   }
 
   console.log(`Starting ${type} Service: Fetching TTL from URL...`);
-  const allQuads = [];
 
   try {
-    // 1. Clear existing data in the specific graph in Oxigraph
+    // 1. Clear existing graph
     const deleteUrl = `${OXIGRAPH_URL.endsWith('/') ? OXIGRAPH_URL : OXIGRAPH_URL + '/'}store?graph=${encodeURIComponent(graphName)}`;
     await fetch(deleteUrl, { method: 'DELETE' });
     console.log(`${type} Oxigraph graph ${graphName} cleared.`);
@@ -22,11 +23,13 @@ export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, gr
 
     const parser = new Parser({ format: 'Turtle' });
 
+    // 2. Parse all quads — parser is synchronous/callback-based so we collect them first,
+    //    then upload in batches and discard each batch to keep peak memory low.
+    const allQuads = [];
     await new Promise((resolve, reject) => {
       parser.parse(ttlData, (error, quad) => {
         if (error) reject(error);
         if (quad) {
-          // Force the quad into the specified named graph
           allQuads.push(DataFactory.quad(quad.subject, quad.predicate, quad.object, namedNode(graphName)));
         } else {
           resolve();
@@ -34,19 +37,24 @@ export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, gr
       });
     });
 
-    if (allQuads.length > 0) {
-      const uniqueSubjects = new Set(allQuads.map(q => q.subject.value));
-      const objectCount = uniqueSubjects.size;
+    if (allQuads.length === 0) return 0;
 
-      console.log(`Uploading to ${type} Oxigraph graph: ${graphName}`);
-      // Use N-Quads to preserve the graph information
-      await uploadToOxigraph(allQuads, OXIGRAPH_URL, graphName);
-      console.log(`${type} upload successfully.`);
-      console.log(`object count: ${objectCount}`);
-      allQuads.length = 0; // Free memory — data is now in Oxigraph, no need to keep it in RAM
-      return objectCount;
+    const uniqueSubjects = new Set(allQuads.map(q => q.subject.value));
+    const objectCount = uniqueSubjects.size;
+
+    // 3. Upload in batches, freeing each batch from allQuads as we go
+    console.log(`Uploading ${allQuads.length} quads to ${type} Oxigraph graph: ${graphName}`);
+    let totalUploaded = 0;
+    while (allQuads.length > 0) {
+      const batch = allQuads.splice(0, BATCH_SIZE); // removes from front, freeing memory
+      await uploadToOxigraph(batch, OXIGRAPH_URL, graphName);
+      totalUploaded += batch.length;
+      console.log(`${type}: uploaded ${totalUploaded} quads so far...`);
     }
-    return 0;
+
+    console.log(`${type} upload successfully. object count: ${objectCount}`);
+    return objectCount;
+
   } catch (error) {
     console.error(`Error in ${type} Service:`, error);
     throw error;
@@ -54,7 +62,7 @@ export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, gr
 }
 
 async function uploadToOxigraph(quads, url, graphName) {
-  const writer = new Writer({ format: 'N-Quads' }); // Use N-Quads for named graphs
+  const writer = new Writer({ format: 'N-Quads' });
   writer.addQuads(quads);
 
   const nQuads = await new Promise((resolve, reject) => {

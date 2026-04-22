@@ -1,5 +1,7 @@
 import { Parser, Writer } from "n3";
 
+const BATCH_SIZE = 5000;
+
 export async function VirtuosoTTLHandler(VIRTUOSO_URL, fileUrl, type, graphName, deleteAndReplace = true) {
   if (!deleteAndReplace) {
     console.log(`${type} Virtuoso TTL: skipping fetch and upload (delete=false).`);
@@ -7,7 +9,6 @@ export async function VirtuosoTTLHandler(VIRTUOSO_URL, fileUrl, type, graphName,
   }
 
   console.log(`Starting ${type} Virtuoso TTL Service: Fetching from ${fileUrl}...`);
-  const allQuads = [];
 
   try {
     const response = await fetch(fileUrl);
@@ -15,6 +16,7 @@ export async function VirtuosoTTLHandler(VIRTUOSO_URL, fileUrl, type, graphName,
     const ttlData = await response.text();
 
     const parser = new Parser({ format: 'Turtle' });
+    const allQuads = [];
     await new Promise((resolve, reject) => {
       parser.parse(ttlData, (error, quad) => {
         if (error) reject(error);
@@ -26,26 +28,33 @@ export async function VirtuosoTTLHandler(VIRTUOSO_URL, fileUrl, type, graphName,
       });
     });
 
-    if (allQuads.length > 0) {
-      const uniqueSubjects = new Set(allQuads.map(q => q.subject.value));
-      const objectCount = uniqueSubjects.size;
+    if (allQuads.length === 0) return 0;
 
-      const gspUrl = `${VIRTUOSO_URL}?graph=${encodeURIComponent(graphName)}`;
-      
-      // Clear the graph first
-      await fetch(gspUrl, { method: 'DELETE' });
-      
-      console.log(`Found ${objectCount} unique objects (from ${allQuads.length} total quads)`);
-      console.log(`Uploading to ${type} Virtuoso graph: ${graphName}`);
-      // Upload
-      await uploadToVirtuoso(allQuads, VIRTUOSO_URL, graphName);
-      allQuads.length = 0; // Free memory — data is now in Virtuoso, no need to keep it in RAM
+    const uniqueSubjects = new Set(allQuads.map(q => q.subject.value));
+    const objectCount = uniqueSubjects.size;
 
-      return objectCount; 
+    // Clear the graph once upfront
+    const gspUrl = `${VIRTUOSO_URL}?graph=${encodeURIComponent(graphName)}`;
+    await fetch(gspUrl, { method: 'DELETE' });
+
+    console.log(`Found ${objectCount} unique objects (from ${allQuads.length} total quads)`);
+    console.log(`Uploading to ${type} Virtuoso graph: ${graphName}`);
+
+    // Upload in batches, splicing from the front to free memory as we go
+    let totalUploaded = 0;
+    while (allQuads.length > 0) {
+      const batch = allQuads.splice(0, BATCH_SIZE);
+      await uploadToVirtuoso(batch, VIRTUOSO_URL, graphName);
+      totalUploaded += batch.length;
+      console.log(`${type}: uploaded ${totalUploaded} quads so far...`);
     }
-    return 0;
+
+    console.log(`${type} Virtuoso TTL upload successful. object count: ${objectCount}`);
+    return objectCount;
+
   } catch (error) {
     console.error(`Error in ${type} Virtuoso TTL Service:`, error);
+    throw error;
   }
 }
 
@@ -68,7 +77,7 @@ async function uploadToVirtuoso(quads, url, graphName) {
 
     const gspUrl = `${url}?graph=${encodeURIComponent(graphName)}`;
     const response = await fetch(gspUrl, {
-      method: 'POST', 
+      method: 'POST',
       headers: { 'Content-Type': 'application/n-triples' },
       body: nTriples
     });
