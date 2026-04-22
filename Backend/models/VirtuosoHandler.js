@@ -37,7 +37,7 @@ export async function VirtuosoHandler(VIRTUOSO_URL, data_url, type, graphName,de
       
       console.log(`Uploading to ${type} Virtuoso graph: ${graphName}`);
       await uploadToVirtuoso(allQuads, VIRTUOSO_URL, graphName, type);
-      
+      allQuads.length = 0; // Free memory — data is now in Oxigraph, no need to keep it in RAM
       console.log(`${type} Virtuoso upload successful.`);
       
       // Return the count for benchmarking purposes

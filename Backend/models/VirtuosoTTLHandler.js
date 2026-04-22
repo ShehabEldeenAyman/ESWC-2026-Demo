@@ -35,8 +35,12 @@ export async function VirtuosoTTLHandler(VIRTUOSO_URL, fileUrl, type, graphName,
       // Clear the graph first
       await fetch(gspUrl, { method: 'DELETE' });
       
+      console.log(`Found ${objectCount} unique objects (from ${allQuads.length} total quads)`);
+      console.log(`Uploading to ${type} Virtuoso graph: ${graphName}`);
       // Upload
       await uploadToVirtuoso(allQuads, VIRTUOSO_URL, graphName);
+      allQuads.length = 0; // Free memory — data is now in Virtuoso, no need to keep it in RAM
+
       return objectCount; 
     }
     return 0;

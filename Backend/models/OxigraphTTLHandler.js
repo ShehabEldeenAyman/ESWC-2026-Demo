@@ -41,7 +41,9 @@ export async function OxigraphTTLHandler(OXIGRAPH_URL, fileUrl, type, portno, gr
       console.log(`Uploading to ${type} Oxigraph graph: ${graphName}`);
       // Use N-Quads to preserve the graph information
       await uploadToOxigraph(allQuads, OXIGRAPH_URL, graphName);
-      
+      console.log(`${type} upload successfully.`);
+      console.log(`object count: ${objectCount}`);
+      allQuads.length = 0; // Free memory — data is now in Oxigraph, no need to keep it in RAM
       return objectCount;
     }
     return 0;

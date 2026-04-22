@@ -43,6 +43,7 @@ export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, grap
       await uploadToOxigraph(allQuads, OXIGRAPH_URL, type, graphName);
       console.log(`${type} upload successfully.`);
       console.log(`object count: ${objectCount}`);
+      allQuads.length = 0; // Free memory — data is now in Oxigraph, no need to keep it in RAM
       // Return the count for the benchmark suite
       return objectCount;
     } else {
