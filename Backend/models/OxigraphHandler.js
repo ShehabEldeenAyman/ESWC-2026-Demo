@@ -12,9 +12,10 @@ export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, grap
   console.log(`Starting ${type} Service stream...`);
 
   try {
-    // 1. Clear existing data in Oxigraph
-    await fetch(OXIGRAPH_URL, { method: 'DELETE' });
-    console.log(`${type} Oxigraph store cleared on port ${portno}.`);
+    // 1. Clear only the target named graph, not the entire store
+    const graphDeleteUrl = `${OXIGRAPH_URL.endsWith('/') ? OXIGRAPH_URL : OXIGRAPH_URL + '/'}store?graph=${encodeURIComponent(graphName)}`;
+    await fetch(graphDeleteUrl, { method: 'DELETE' });
+    console.log(`${type} Oxigraph graph ${graphName} cleared on port ${portno}.`);
 
     const ldesClient = replicateLDES({
       url: data_url,
@@ -27,7 +28,6 @@ export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, grap
     let batch = [];
     let totalQuads = 0;
     const uniqueSubjects = new Set();
-    let isFirstBatch = true;
 
     let result = await memberReader.read();
     while (!result.done) {
@@ -37,11 +37,10 @@ export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, grap
       }
 
       if (batch.length >= BATCH_SIZE) {
-        await uploadToOxigraph(batch, OXIGRAPH_URL, type, graphName, isFirstBatch);
+        await uploadToOxigraph(batch, OXIGRAPH_URL, type, graphName);
         totalQuads += batch.length;
         console.log(`${type}: uploaded ${totalQuads} quads so far...`);
         batch.length = 0; // Free batch memory
-        isFirstBatch = false;
       }
 
       result = await memberReader.read();
@@ -49,7 +48,7 @@ export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, grap
 
     // Flush remaining quads
     if (batch.length > 0) {
-      await uploadToOxigraph(batch, OXIGRAPH_URL, type, graphName, isFirstBatch);
+      await uploadToOxigraph(batch, OXIGRAPH_URL, type, graphName);
       totalQuads += batch.length;
       batch.length = 0;
     }
@@ -70,14 +69,11 @@ export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, grap
   }
 }
 
-async function uploadToOxigraph(quads, url, type, graphName, isFirstBatch) {
+async function uploadToOxigraph(quads, url, type, graphName) {
   try {
     const gspUrl = `${url}store?graph=${encodeURIComponent(graphName)}`;
 
-    // Only clear the graph on the very first batch
-    if (isFirstBatch) {
-      await fetch(gspUrl, { method: 'DELETE' });
-    }
+    // Graph was already cleared upfront before streaming began
 
     const writer = new Writer({ format: 'N-Triples' });
 
