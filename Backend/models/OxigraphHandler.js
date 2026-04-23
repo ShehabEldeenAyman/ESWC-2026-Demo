@@ -1,7 +1,7 @@
 import { replicateLDES } from "ldes-client";
 import { Writer } from "n3";
 
-const BATCH_SIZE = 5000;
+const BATCH_SIZE = 1000;
 
 export async function OxigraphHandler(OXIGRAPH_URL, data_url, type, portno, graphName, deleteAndReplace = true) {
   if (!deleteAndReplace) {

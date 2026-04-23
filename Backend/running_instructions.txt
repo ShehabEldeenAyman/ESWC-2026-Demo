@@ -8,6 +8,10 @@ Oxigraph:
 ./oxigraph serve --location ./oxigraph_data_2 --bind 127.0.0.1:7879
 ./oxigraph serve --location ./oxigraph_data_3 --bind 127.0.0.1:7877
 
+oxigraph serve --location ./oxigraph_data_1 --bind 127.0.0.1:7878 & disown
+oxigraph serve --location ./oxigraph_data_2 --bind 127.0.0.1:7879 & disown
+oxigraph serve --location ./oxigraph_data_3 --bind 127.0.0.1:7877 & disown  #usethis
+
 Virtuoso: Virtuoso Services Control
 sudo systemctl start virtuoso-opensource
 sudo systemctl start virtuoso-opensource-7
