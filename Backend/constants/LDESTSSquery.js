@@ -1,7 +1,7 @@
 import { name_GRAPH_LDESTSS } from './constants.js';
 
 
-export const OXIGRAPH_BASE_URL_LDESTSS = "http://localhost:7878/"; // Base URL for Oxigraph
+//export const OXIGRAPH_BASE_URL_LDESTSS = "http://localhost:7878/"; // Base URL for Oxigraph
 export const data_url_LDESTSS = "https://shehabeldeenayman.github.io/Mol_sluis_Dessel_Usecase/LDESTSS/LDESTSS.trig";
 
  export const RiverStage1YearTSSquery = (limit, offset) => `

@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors'
-import {OXIGRAPH_BASE_URL_LDESTSS,RiverStage1YearTSSquery,RiverDischarge1YearTSSquery,data_url_LDESTSS} from './constants/LDESTSSquery.js'
-import {OXIGRAPH_BASE_URL_LDES,RiverDischarge1YearLDESquery,RiverStage1YearLDESquery,data_url_LDES} from './constants/LDESquery.js'
+import {RiverStage1YearTSSquery,RiverDischarge1YearTSSquery,data_url_LDESTSS} from './constants/LDESTSSquery.js'
+import {RiverDischarge1YearLDESquery,RiverStage1YearLDESquery,data_url_LDES} from './constants/LDESquery.js'
 import {ldestssOxigraphRoute} from './routes/ldestssOxigraphRoute.js'
 import { ldesOxigraphRoute } from './routes/ldesOxigraphRoute.js';
 import {OxigraphHandler} from './models/OxigraphHandler.js'
@@ -10,7 +10,7 @@ import {ldesVirtuosoRoute} from './routes/ldesVirtuosoRoute.js';
 import {ldestssVirtuosoRoute} from './routes/ldestssVirtuosoRoute.js';
 import {ingestBenchmarks,recallBenchmarks,objectcountBenchmarks } from './routes/benchmarks.js';
 import {OxigraphTTLHandler} from './models/OxigraphTTLHandler.js';
-import {CSV_URL,ttl_URL,OXIGRAPH_BASE_URL_TTL,data_url_TTL,VIRTUOSO_URL} from './constants/constants.js';
+import {CSV_URL,ttl_URL,OXIGRAPH_BASE_URL,data_url_TTL,VIRTUOSO_URL} from './constants/constants.js';
 import {VirtuosoTTLHandler} from './models/VirtuosoTTLHandler.js';
 import {ttlVirtuosoRoute} from './routes/ttlVirtuosoRoute.js';
 import {RiverDischarge1YearTTLqueryVirtuoso,RiverStage1YearTTLqueryVirtuoso,RiverDischarge1YearTTLqueryOxigraph,RiverStage1YearTTLqueryOxigraph} from './constants/TTLquery.js'
@@ -186,13 +186,13 @@ app.get('/virtuoso/ldes/RiverDischarge1Year', cacheMiddleware, async (req, res) 
 app.get('/oxigraph/ldes/RiverStage1Year', cacheMiddleware, async (req, res) => {
     const { limit, offset } = getPagination(req.query);
     const query = RiverStage1YearLDESquery(limit, offset);
-    await ldesOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL_LDES);
+    await ldesOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL);
 });
 
 app.get('/oxigraph/ldes/RiverDischarge1Year', cacheMiddleware, async (req, res) => {
     const { limit, offset } = getPagination(req.query);
     const query = RiverDischarge1YearLDESquery(limit, offset);
-    await ldesOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL_LDES);
+    await ldesOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL);
 });
 
 // --- TSS ROUTES ---
@@ -212,13 +212,13 @@ app.get('/virtuoso/ldestss/RiverDischarge1Year', cacheMiddleware, async (req, re
 app.get('/oxigraph/ldestss/RiverStage1Year', cacheMiddleware, async (req, res) => {
     const { limit, offset } = getPagination(req.query);
     const query = RiverStage1YearTSSquery(limit, offset);
-    await ldestssOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL_LDESTSS);
+    await ldestssOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL);
 });
 
 app.get('/oxigraph/ldestss/RiverDischarge1Year', cacheMiddleware, async (req, res) => {
     const { limit, offset } = getPagination(req.query);
     const query = RiverDischarge1YearTSSquery(limit, offset);
-    await ldestssOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL_LDESTSS);
+    await ldestssOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL);
 });
 
 // --- TTL ROUTES ---
@@ -238,13 +238,13 @@ app.get('/virtuoso/ttl/RiverDischarge1Year', cacheMiddleware, async (req, res) =
 app.get('/oxigraph/ttl/RiverStage1Year', cacheMiddleware, async (req, res) => {
     const { limit, offset } = getPagination(req.query);
     const query = RiverStage1YearTTLqueryOxigraph(limit, offset);
-    await ttlOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL_TTL);
+    await ttlOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL);
 });
 
 app.get('/oxigraph/ttl/RiverDischarge1Year', cacheMiddleware, async (req, res) => {
     const { limit, offset } = getPagination(req.query);
     const query = RiverDischarge1YearTTLqueryOxigraph(limit, offset);
-    await ttlOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL_TTL);
+    await ttlOxigraphRoute(req, res, query, OXIGRAPH_BASE_URL);
 });
 
 // --- POSTGRES CSV ROUTES ---
@@ -327,7 +327,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 0: Oxigraph LDESTSS
         results.push(await runIngest("LDESTSS Oxigraph",
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDESTSS, data_url_LDESTSS, "LDESTSS", 7878, name_GRAPH_LDESTSS, deleteExisting),
+            OxigraphHandler(OXIGRAPH_BASE_URL, data_url_LDESTSS, "LDESTSS",OXIGRAPH_BASE_URL , name_GRAPH_LDESTSS, deleteExisting), //previous port: 7878
             (t) => oxigraphLDESTSS_ingest_time = t
         ));
     } catch (err) { console.error("LDESTSS Oxigraph ingest failed:", err); results.push(0); }
@@ -335,7 +335,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 1: Oxigraph LDES
         results.push(await runIngest("LDES Oxigraph",
-            OxigraphHandler(OXIGRAPH_BASE_URL_LDES, data_url_LDES, "LDES", 7879, name_GRAPH_LDES, deleteExisting),
+            OxigraphHandler(OXIGRAPH_BASE_URL, data_url_LDES, "LDES",OXIGRAPH_BASE_URL , name_GRAPH_LDES, deleteExisting), //previous port: 7877
             (t) => oxigraphLDES_ingest_time = t
         ));
     } catch (err) { console.error("LDES Oxigraph ingest failed:", err); results.push(0); }
@@ -359,7 +359,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 4: TTL Oxigraph
         results.push(await runIngest("TTL Oxigraph",
-            OxigraphTTLHandler(OXIGRAPH_BASE_URL_TTL, data_url_TTL, "TTL", 7877, name_GRAPH_TTL, deleteExisting),
+            OxigraphTTLHandler(OXIGRAPH_BASE_URL, data_url_TTL, "TTL", 7877, name_GRAPH_TTL, deleteExisting),
             (t) => oxigraphTTL_ingest_time = t
         ));
     } catch (err) { console.error("TTL Oxigraph ingest failed:", err); results.push(0); }
@@ -463,7 +463,7 @@ try {
         ldesOxigraphRoute,
         RiverStage1YearLDESqueryALL(),
         RiverDischarge1YearLDESqueryALL(),
-        OXIGRAPH_BASE_URL_LDES,
+        OXIGRAPH_BASE_URL,
         (t) => oxigraphLDES_recall_time = t
     );
 
@@ -471,7 +471,7 @@ try {
         ldestssOxigraphRoute,
         RiverStage1YearTSSqueryALL(),
         RiverDischarge1YearTSSqueryALL(),
-        OXIGRAPH_BASE_URL_LDESTSS,
+        OXIGRAPH_BASE_URL,
         (t) => oxigraphLDESTSS_recall_time = t
     );
 
@@ -479,7 +479,7 @@ try {
         ttlOxigraphRoute,
         RiverStage1YearTTLqueryOxigraphALL(),
         RiverDischarge1YearTTLqueryOxigraphALL(),
-        OXIGRAPH_BASE_URL_TTL,
+        OXIGRAPH_BASE_URL,
         (t) => oxigraphTTL_recall_time = t
     );
 

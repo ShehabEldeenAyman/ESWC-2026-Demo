@@ -1,7 +1,7 @@
 // LDESquery.js
 import { name_GRAPH_LDES } from './constants.js';
 
-export const OXIGRAPH_BASE_URL_LDES = "http://localhost:7879/";
+//export const OXIGRAPH_BASE_URL_LDES = "http://localhost:7879/";
 export const data_url_LDES = "https://shehabeldeenayman.github.io/Mol_sluis_Dessel_Usecase/LDES/LDES.trig";
 
 // Change this to an arrow function
