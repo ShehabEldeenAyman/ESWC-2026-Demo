@@ -29,3 +29,11 @@ npm run dev
 
 Ngrok:
 ngrok http [port_number]
+
+PM2:
+pm2 start npm --name "backend" -- run dev
+pm2 start npm --name "frontend" -- run dev
+
+pm2 list (See what's running)
+pm2 logs (See the console output)
+pm2 stop my-app (Stop the process)
