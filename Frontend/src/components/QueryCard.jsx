@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { base_url } from '../constants';
 
 const innerStyles = {
   container: {
@@ -121,10 +122,10 @@ export const QueryCard = () => {
     
     let baseUrl = '';
     switch (dbType) {
-      case 'LDES': baseUrl = 'http://localhost:3000/virtuoso/ldes'; break;
-      case 'LDESTSS': baseUrl = 'http://localhost:3000/virtuoso/ldestss'; break;
-      case 'TTL': baseUrl = 'http://localhost:3000/virtuoso/ttl'; break;
-      default: baseUrl = 'http://localhost:3000/virtuoso/ttl';
+      case 'LDES': baseUrl = `${base_url}/ldes`; break;
+      case 'LDESTSS': baseUrl = `${base_url}/ldestss`; break;
+      case 'TTL': baseUrl = `${base_url}/ttl`; break; 
+      default: baseUrl = `${base_url}/ttl`;
     }
 
     const encodedQuery = encodeURIComponent(query);
