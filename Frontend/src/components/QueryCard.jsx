@@ -122,10 +122,10 @@ export const QueryCard = () => {
     
     let baseUrl = '';
     switch (dbType) {
-      case 'LDES': baseUrl = `${base_url}/ldes`; break;
-      case 'LDESTSS': baseUrl = `${base_url}/ldestss`; break;
-      case 'TTL': baseUrl = `${base_url}/ttl`; break; 
-      default: baseUrl = `${base_url}/ttl`;
+      case 'LDES': baseUrl = `${base_url}virtuoso/ldes`; break;
+      case 'LDESTSS': baseUrl = `${base_url}virtuoso/ldestss`; break;
+      case 'TTL': baseUrl = `${base_url}virtuoso/ttl`; break; 
+      default: baseUrl = `${base_url}virtuoso/ttl`;
     }
 
     const encodedQuery = encodeURIComponent(query);
