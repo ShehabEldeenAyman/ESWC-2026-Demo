@@ -375,7 +375,7 @@ const runIngest = async (name, handlerPromise, timeVarSetter) => {
     try {
         // 6: Postgres CSV
         results.push(await runIngest("CSV Postgres",
-            postgresHandler(CSV_URL),
+            postgresHandler(CSV_URL, deleteExisting),
             (t) => postgresCSV_ingest_time = t
         ));
     } catch (err) { console.error("CSV Postgres ingest failed:", err); results.push(0); }
