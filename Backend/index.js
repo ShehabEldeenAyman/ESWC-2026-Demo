@@ -50,7 +50,7 @@ var oxigraphTTL_count = null;
 var oxigraphLDES_count = null;
 var oxigraphTSS_count = null;
 
-var deleteExisting = true; // Set to true to clear existing data before ingesting new data
+var deleteExisting = false; // Set to true to clear existing data before ingesting new data
 app.use(express.json());
 // Replace the simple cors() with this:
 app.use(cors({
